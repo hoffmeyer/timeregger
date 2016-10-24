@@ -8,15 +8,15 @@ import           Data.Time.Clock
 import           Lib
 import           Web.Scotty
 
-data MyDay = MyDay { start :: UTCTime, end :: UTCTime } deriving Show
+data MyDay = MyDay { start :: UTCTime, minutes :: Integer } deriving Show
 
 today :: MyDay
-today = MyDay { start = UTCTime (fromGregorian 2011 12 16) (fromIntegral $ 12 * 3600), end = UTCTime (fromGregorian 2011 12 16) (fromIntegral $ 11 * 3600) }
+today = MyDay { start = UTCTime (fromGregorian 2011 12 16) (fromIntegral $ 12 * 3600), minutes = 450 }
 
 instance ToJSON MyDay where
   toJSON d = object [
     "start" .= start d,
-    "end" .= end d ]
+    "minutes" .= minutes d ]
 
 main :: IO ()
 main = scotty 3000 $ do
