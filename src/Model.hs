@@ -24,25 +24,25 @@ import           Database.Persist.Sqlite      as Sqlite
 import           Database.Persist.TH
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-MyDay json
+WorkDay json
     start UTCTime
     minutes Int
     deriving Show
 |]
 
-data MyDayAction = MyDayAction
+data WorkDayAction = WorkDayAction
   { actStart   :: Maybe UTCTime
   , actMinutes :: Maybe Int
   } deriving Show
 
-instance FromJSON MyDayAction where
-  parseJSON (Object o) = MyDayAction
+instance FromJSON WorkDayAction where
+  parseJSON (Object o) = WorkDayAction
     <$> o .:? "start"
     <*> o .:? "minutes"
   parseJSON _ = mzero
 
-actionToMyday :: MyDayAction -> MyDay
-actionToMyday (MyDayAction mStart mMinutes ) = MyDay start minutes
+actionToMyday :: WorkDayAction -> WorkDay
+actionToMyday (WorkDayAction mStart mMinutes ) = WorkDay start minutes
   where
     start = fromMaybe (UTCTime (fromGregorian 0 0 0) 0) mStart
     minutes = fromMaybe 0 mMinutes
@@ -50,10 +50,10 @@ actionToMyday (MyDayAction mStart mMinutes ) = MyDay start minutes
 runDb :: SqlPersistT (ResourceT (NoLoggingT IO)) a -> IO a
 runDb = runNoLoggingT . runResourceT . withSqliteConn "dev.sqlite3" . runSqlConn
 
-insertDates :: MyDay -> IO (Key MyDay)
+insertDates :: WorkDay -> IO (Key WorkDay)
 insertDates day = runDb $ Sqlite.insert day
 
-readDates :: IO [Entity MyDay]
+readDates :: IO [Entity WorkDay]
 readDates = runDb $ selectList [] [LimitTo 10]
 
 migrate :: IO ()
