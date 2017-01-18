@@ -2,28 +2,35 @@
 
 module Main where
 
-import           Control.Applicative
-import           Control.Monad.IO.Class (liftIO)
-import           Data.Monoid
-import           Model
-import qualified Web.Scotty             as S
+import Web.Scotty
+import Network.Wai
+import qualified Controllers.Controller as Controller
+import Model
+import Network.Wai.Middleware.HttpAuth
 
 main :: IO ()
 main = do
   migrate
-  S.scotty 3000 $ do
-    S.get "/" $ do
-      S.html "Hello World!"
-    S.get "/hello/:name" $ do
-      name <- S.param "name"
-      S.text ("hello " <> name <> "!")
-    S.get "/dates" $ do
-      todos <- liftIO readDates
-      S.json todos
-    S.put "/dates" $ do
-      t <- S.jsonData
-      let day = actionToMyday t
-      did <- liftIO $ insertDates day
-      S.html "OK"
-    S.notFound $ do
-      S.text "404 no match found"
+  scotty 3000 $
+    do middleware $
+         basicAuth
+           authorize
+           ("timeregger"
+            { authIsProtected = authProtected
+            } :: AuthSettings)
+       get "/" Controller.hello
+       get "/hello/:name" Controller.helloName
+       put "/users" Controller.createUser
+       get "/dates" Controller.getDates
+       put "/dates" Controller.addDate
+       notFound $ text "404 no match found"
+
+authProtected :: Request -> IO Bool
+authProtected r =
+  pure $
+  case pathInfo r of
+    [] -> False
+    x:xs -> x /= "users"
+
+authorize :: CheckCreds
+authorize = Controller.login

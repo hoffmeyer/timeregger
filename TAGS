@@ -1,0 +1,30 @@
+
+./app/Main.hs,56
+module Main Main2,3
+main main10,11
+main main11,12
+
+./Setup.hs,15
+main main1,2
+
+./src/Model.hs,478
+module Model Model11,12
+data WorkDayAction WorkDayAction32,33
+data WorkDayAction = WorkDayActionWorkDayAction32,33
+  { actStart actStart33,34
+  , actMinutes actMinutes34,35
+instance instance37,38
+actionToMyday actionToMyday43,44
+actionToMyday actionToMyday44,45
+runDb runDb49,50
+runDb runDb50,51
+insertDates insertDates52,53
+insertDates insertDates53,54
+readDates readDates55,56
+readDates readDates56,57
+migrate migrate58,59
+migrate migrate59,60
+
+./test/Spec.hs,30
+main main0,1
+main main1,2
