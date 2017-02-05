@@ -44,8 +44,5 @@ login :: ByteString -> ByteString -> IO Bool
 login username password = do
   user <- liftIO $ readUser $ unpack username
   case user of
-    Just (Entity _ foundUser) ->
-      if PW.verifyPassword (password) (pack $ userUserToken foundUser)
-        then return True
-        else return False
+    Just (Entity _ foundUser) -> return PW.verifyPassword password (pack $ userUserToken foundUser)
     Nothing -> return False
