@@ -11,16 +11,28 @@ import Data.Monoid
 import Model
 import Web.Scotty
 import Database.Persist
-import Data.ByteString hiding (pack, unpack)
-import Data.ByteString.Char8 (pack, unpack)
+import Data.ByteString as BS hiding (pack, unpack)
+import Data.ByteString.Char8 as BSC8 (pack, unpack)
+import Data.Text.Lazy as LT
 
 hello :: ActionM ()
 hello = html "Hello World!"
 
-helloName :: ActionM ()
-helloName = do
+helloName :: User -> ActionM ()
+helloName _ = do
   name <- param "name"
   text ("hello " <> name <> "!")
+
+login :: ActionM ()
+login = do
+  newUser <- jsonData
+  user <- liftIO $ readUser $ newUsername newUser
+  case user of
+    Just (Entity _ foundUser) ->
+      if PW.verifyPassword (BSC8.pack $ newPassword newUser) (BSC8.pack $ userUsertoken foundUser)
+        then json user
+        else html "FAIL"
+    Nothing -> html "FAIL"
 
 createUser :: ActionM ()
 createUser = do
@@ -28,21 +40,33 @@ createUser = do
   uid <- liftIO $ insertUser user
   html "OK"
 
-getDates :: ActionM ()
-getDates = do
+getDates :: User -> ActionM ()
+getDates _ = do
   todos <- liftIO readDates
   json todos
 
-addDate :: ActionM ()
-addDate = do
+addDate :: User -> ActionM ()
+addDate _ = do
   t <- jsonData
   let day = actionToMyday t
   did <- liftIO $ insertDates day
   html "OK"
 
-login :: ByteString -> ByteString -> IO Bool
-login username password = do
-  user <- liftIO $ readUser $ unpack username
+fromRequest :: ActionM User
+fromRequest = do
+  uid <- param "user_id"
+  token <- header "Authorization"
+  case LT.words <$> token of
+    Just ["Token", t] -> return $ User uid $ LT.unpack t
+    _ -> raise $ LT.pack "Invalid User"
+
+authenticate :: (User -> ActionM ()) -> ActionM ()
+authenticate routeFor = do
+  reqUser <- fromRequest
+  user <- liftIO $ readUser $ userUsername reqUser
   case user of
-    Just (Entity _ foundUser) -> return PW.verifyPassword password (pack $ userUserToken foundUser)
-    Nothing -> return False
+    Just (Entity _ foundUser) ->
+      if userUsertoken reqUser == userUsertoken foundUser
+        then routeFor foundUser
+        else html "Login failed"
+    Nothing -> html "Login failed"

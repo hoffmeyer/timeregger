@@ -36,8 +36,8 @@ WorkDay json
     deriving Show
 
 User json
-    userName String
-    userToken String
+    username String
+    usertoken String
     deriving Show
 |]
 
@@ -46,21 +46,21 @@ data WorkDayAction = WorkDayAction
   , actMinutes :: Maybe Int
   } deriving (Show)
 
-data Login = Login
-  { username :: String
-  , password :: String
+data NewUser = NewUser
+  { newUsername :: String
+  , newPassword :: String
   } deriving (Show)
 
 instance FromJSON WorkDayAction where
   parseJSON (Object o) = WorkDayAction <$> o .:? "start" <*> o .:? "minutes"
   parseJSON _ = mzero
 
-instance FromJSON Login where
-  parseJSON (Object o) = Login <$> o .: "username" <*> o .: "password"
+instance FromJSON NewUser where
+  parseJSON (Object o) = NewUser <$> o .: "username" <*> o .: "password"
   parseJSON _ = mzero
 
-instance ToJSON Login where
-  toJSON p = object ["username" .= username p, "password" .= password p]
+instance ToJSON NewUser where
+  toJSON p = object ["username" .= newUsername p, "password" .= newPassword p]
 
 actionToMyday :: WorkDayAction -> WorkDay
 actionToMyday (WorkDayAction mStart mMinutes) = WorkDay start minutes
@@ -68,8 +68,8 @@ actionToMyday (WorkDayAction mStart mMinutes) = WorkDay start minutes
     start = fromMaybe (UTCTime (fromGregorian 0 0 0) 0) mStart
     minutes = fromMaybe 0 mMinutes
 
-actionToUser :: Login -> User
-actionToUser (Login username password) = User username (unpack token)
+actionToUser :: NewUser -> User
+actionToUser (NewUser username password) = User username (unpack token)
   where
     token = PW.makePasswordSalt (pack password) (makeSalt "thisIsTheSalt") 22
 
@@ -82,11 +82,11 @@ insertDates day = runDb $ Sqlite.insert day
 readDates :: IO [Entity WorkDay]
 readDates = runDb $ selectList [] [LimitTo 10]
 
-insertUser :: User -> IO (Key User)
-insertUser user = runDb $ Sqlite.insert user
+insertUser :: NewUser -> IO (Key User)
+insertUser newUser = runDb $ Sqlite.insert $ actionToUser newUser
 
 readUser :: String -> IO (Maybe (Entity User))
-readUser username = runDb $ selectFirst [UserUserName ==. username] []
+readUser username = runDb $ selectFirst [UserUsername ==. username] []
 
 migrate :: IO ()
 migrate = runDb $ Sqlite.runMigration migrateAll
