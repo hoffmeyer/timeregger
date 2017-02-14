@@ -31,8 +31,8 @@ login = do
     Just (Entity _ foundUser) ->
       if PW.verifyPassword (BSC8.pack $ newPassword newUser) (BSC8.pack $ userUsertoken foundUser)
         then json user
-        else html "FAIL"
-    Nothing -> html "FAIL"
+        else raise $ LT.pack "Invalid password"
+    Nothing -> raise $ LT.pack "Invalid username"
 
 createUser :: ActionM ()
 createUser = do
@@ -58,7 +58,7 @@ fromRequest = do
   token <- header "Authorization"
   case LT.words <$> token of
     Just ["Token", t] -> return $ User uid $ LT.unpack t
-    _ -> raise $ LT.pack "Invalid User"
+    _ -> raise $ LT.pack "Access denied"
 
 authenticate :: (User -> ActionM ()) -> ActionM ()
 authenticate routeFor = do
@@ -68,5 +68,5 @@ authenticate routeFor = do
     Just (Entity _ foundUser) ->
       if userUsertoken reqUser == userUsertoken foundUser
         then routeFor foundUser
-        else html "Login failed"
-    Nothing -> html "Login failed"
+        else raise $ LT.pack "Acces denied"
+    Nothing -> raise $ LT.pack "Acces denied"
