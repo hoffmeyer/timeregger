@@ -12,9 +12,9 @@ main = do
   scotty 3000 $
     do get "/" Controller.hello
        put "/login" Controller.login
-       put "/users" Controller.createUser
+       post "/users" Controller.createUser
        -- Authenticated routes
-       get "/hello/:name" $ Controller.authenticate Controller.helloName
        get "/dates" $ Controller.authenticate Controller.getDates
-       put "/dates" $ Controller.authenticate Controller.addDate
+       post "/dates" $ Controller.authenticate Controller.addDate
+       put "/dates/:dateId" $ Controller.authenticate Controller.updateDate
        notFound $ text "404 no match found"

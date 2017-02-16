@@ -18,11 +18,6 @@ import Data.Text.Lazy as LT
 hello :: ActionM ()
 hello = html "Hello World!"
 
-helloName :: User -> ActionM ()
-helloName _ = do
-  name <- param "name"
-  text ("hello " <> name <> "!")
-
 login :: ActionM ()
 login = do
   newUser <- jsonData
@@ -51,6 +46,12 @@ addDate _ = do
   let day = actionToMyday t
   did <- liftIO $ insertDates day
   html "OK"
+
+updateDate :: User -> ActionM ()
+helloName _ = do
+  name <- param "dateId"
+  text ("the date id was:  " <> dateId <> "!")
+
 
 fromRequest :: ActionM User
 fromRequest = do
