@@ -48,8 +48,8 @@ addDate _ = do
   html "OK"
 
 updateDate :: User -> ActionM ()
-helloName _ = do
-  name <- param "dateId"
+updateDate _ = do
+  dateId <- param "dateId"
   text ("the date id was:  " <> dateId <> "!")
 
 
