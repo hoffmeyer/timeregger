@@ -8,7 +8,7 @@ import Crypto.PasswordStore as PW
 import Data.Char
 import Data.Maybe (fromMaybe)
 import Data.Monoid
-import Model
+import Model as M
 import Web.Scotty
 import Database.Persist
 import Data.ByteString as BS hiding (pack, unpack)
@@ -16,7 +16,7 @@ import Data.ByteString.Char8 as BSC8 (pack, unpack)
 import Data.Text.Lazy as LT
 
 hello :: ActionM ()
-hello = html "Hello World!"
+hello = html "<h1>Hello World! Here we need to serve the actual app.</h1>"
 
 login :: ActionM ()
 login = do
@@ -35,23 +35,37 @@ createUser = do
   uid <- liftIO $ insertUser user
   html "OK"
 
-getDates :: User -> ActionM ()
+deleteUser :: Entity User -> ActionM ()
+deleteUser (Entity key user) = do
+  liftIO $ M.deleteUser key
+  html "OK"
+
+getDates :: Entity User -> ActionM ()
 getDates _ = do
   todos <- liftIO readDates
   json todos
 
-addDate :: User -> ActionM ()
-addDate _ = do
+addDate :: Entity User -> ActionM ()
+addDate user = do
   t <- jsonData
-  let day = actionToMyday t
+  let day = actionToMyday t user
   did <- liftIO $ insertDates day
   html "OK"
 
-updateDate :: User -> ActionM ()
-updateDate _ = do
+updateDate :: Entity User -> ActionM ()
+updateDate user = do
+  t <- jsonData
+  let day = actionToMyday t user
   dateId <- param "dateId"
-  text ("the date id was:  " <> dateId <> "!")
+  did <- liftIO $ M.updateDate day dateId
+  html "OK"
 
+-- TODO: verify thot you can only delete your own dates
+deleteDate :: Entity User -> ActionM ()
+deleteDate _ = do
+  dateId <- param "dateId"
+  liftIO $ M.deleteDate dateId
+  html "OK"
 
 fromRequest :: ActionM User
 fromRequest = do
@@ -61,13 +75,13 @@ fromRequest = do
     Just ["Token", t] -> return $ User uid $ LT.unpack t
     _ -> raise $ LT.pack "Access denied"
 
-authenticate :: (User -> ActionM ()) -> ActionM ()
+authenticate :: (Entity User -> ActionM ()) -> ActionM ()
 authenticate routeFor = do
   reqUser <- fromRequest
   user <- liftIO $ readUser $ userUsername reqUser
   case user of
-    Just (Entity _ foundUser) ->
+    Just userEntity@(Entity _ foundUser) ->
       if userUsertoken reqUser == userUsertoken foundUser
-        then routeFor foundUser
+        then routeFor userEntity
         else raise $ LT.pack "Acces denied"
     Nothing -> raise $ LT.pack "Acces denied"

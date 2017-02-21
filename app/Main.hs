@@ -14,7 +14,9 @@ main = do
        put "/login" Controller.login
        post "/users" Controller.createUser
        -- Authenticated routes
+       delete "/users" $ Controller.authenticate Controller.deleteUser
        get "/dates" $ Controller.authenticate Controller.getDates
        post "/dates" $ Controller.authenticate Controller.addDate
+       delete "/dates/:dateId" $ Controller.authenticate Controller.deleteDate
        put "/dates/:dateId" $ Controller.authenticate Controller.updateDate
        notFound $ text "404 no match found"

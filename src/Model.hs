@@ -26,18 +26,21 @@ import Database.Persist
 import Database.Persist.Sqlite as Sqlite
 import Database.Persist.TH
 import Web.Scotty
+import Data.Int
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
   [persistLowerCase|
-WorkDay json
-    start UTCTime
-    minutes Int
-    deriving Show
 
 User json
     username String
     usertoken String
+    deriving Show
+
+WorkDay json
+    user UserId      -- required Foreign Key
+    start UTCTime
+    minutes Int
     deriving Show
 |]
 
@@ -62,8 +65,8 @@ instance FromJSON NewUser where
 instance ToJSON NewUser where
   toJSON p = object ["username" .= newUsername p, "password" .= newPassword p]
 
-actionToMyday :: WorkDayAction -> WorkDay
-actionToMyday (WorkDayAction mStart mMinutes) = WorkDay start minutes
+actionToMyday :: WorkDayAction -> Entity User -> WorkDay
+actionToMyday (WorkDayAction mStart mMinutes) (Entity uid _) = WorkDay uid start minutes
   where
     start = fromMaybe (UTCTime (fromGregorian 0 0 0) 0) mStart
     minutes = fromMaybe 0 mMinutes
@@ -79,6 +82,12 @@ runDb = runNoLoggingT . runResourceT . withSqliteConn "dev.sqlite3" . runSqlConn
 insertDates :: WorkDay -> IO (Key WorkDay)
 insertDates day = runDb $ Sqlite.insert day
 
+updateDate :: WorkDay -> Int64 -> IO ()
+updateDate day id = runDb $ Sqlite.replace (toSqlKey id) day
+
+deleteDate :: Int64 -> IO ()
+deleteDate id = runDb $ Sqlite.delete (toSqlKey id :: Key WorkDay)
+
 readDates :: IO [Entity WorkDay]
 readDates = runDb $ selectList [] [LimitTo 10]
 
@@ -87,6 +96,9 @@ insertUser newUser = runDb $ Sqlite.insert $ actionToUser newUser
 
 readUser :: String -> IO (Maybe (Entity User))
 readUser username = runDb $ selectFirst [UserUsername ==. username] []
+
+deleteUser :: Key User -> IO ()
+deleteUser key = runDb $ Sqlite.delete key
 
 migrate :: IO ()
 migrate = runDb $ Sqlite.runMigration migrateAll
