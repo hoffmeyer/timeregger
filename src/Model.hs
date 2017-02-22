@@ -91,6 +91,9 @@ deleteDate id = runDb $ Sqlite.delete (toSqlKey id :: Key WorkDay)
 readDates :: IO [Entity WorkDay]
 readDates = runDb $ selectList [] [LimitTo 10]
 
+readDate :: Int64 -> IO (Maybe WorkDay)
+readDate id = runDb $ Sqlite.get (toSqlKey id :: Key WorkDay)
+
 insertUser :: NewUser -> IO (Key User)
 insertUser newUser = runDb $ Sqlite.insert $ actionToUser newUser
 

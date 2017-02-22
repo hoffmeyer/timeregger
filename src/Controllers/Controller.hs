@@ -42,8 +42,17 @@ deleteUser (Entity key user) = do
 
 getDates :: Entity User -> ActionM ()
 getDates _ = do
-  todos <- liftIO readDates
-  json todos
+  dates <- liftIO readDates
+  json dates
+
+-- TODO: verify thot you can only get your own dates
+getDate :: Entity User -> ActionM ()
+getDate _ = do
+  dateId <- param "dateId"
+  maybeDate <- liftIO $ readDate dateId
+  case maybeDate of
+    Just date -> json date
+    Nothing -> raise $ LT.pack "Date not found"
 
 addDate :: Entity User -> ActionM ()
 addDate user = do

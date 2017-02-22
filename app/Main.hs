@@ -16,6 +16,7 @@ main = do
        -- Authenticated routes
        delete "/users" $ Controller.authenticate Controller.deleteUser
        get "/dates" $ Controller.authenticate Controller.getDates
+       get "/dates/:dateId" $ Controller.authenticate Controller.getDate
        post "/dates" $ Controller.authenticate Controller.addDate
        delete "/dates/:dateId" $ Controller.authenticate Controller.deleteDate
        put "/dates/:dateId" $ Controller.authenticate Controller.updateDate
