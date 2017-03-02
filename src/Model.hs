@@ -1,32 +1,33 @@
-{-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE QuasiQuotes                #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
+
 
 module Model where
 
-import Control.Monad (forM_, mzero)
-import Control.Monad.Logger
-import Control.Monad.Trans.Resource (ResourceT, runResourceT)
-import Crypto.PasswordStore as PW
-import Data.Aeson hiding (json)
-import Data.ByteString hiding (pack, unpack)
-import Data.ByteString.Char8 (pack, unpack)
-import Data.Maybe (fromMaybe)
-import Data.Time (UTCTime, getCurrentTime)
-import Data.Time.Calendar
-import Data.Time.Clock
-import Database.Persist
-import Database.Persist.Sqlite as Sqlite
-import Database.Persist.TH
-import Web.Scotty
-import Data.Int
+import           Control.Monad                (forM_, mzero)
+import           Control.Monad.Logger
+import           Control.Monad.Trans.Resource (ResourceT, runResourceT)
+import           Crypto.PasswordStore         as PW
+import           Data.Aeson                   hiding (json)
+import           Data.ByteString              hiding (pack, unpack)
+import           Data.ByteString.Char8        (pack, unpack)
+import           Data.Int
+import           Data.Maybe                   (fromMaybe)
+import           Data.Time                    (UTCTime, getCurrentTime)
+import           Data.Time.Calendar
+import           Data.Time.Clock
+import           Database.Persist
+import           Database.Persist.Sqlite      as Sqlite
+import           Database.Persist.TH
+import           Web.Scotty
 
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
@@ -35,6 +36,7 @@ share
 User json
     username String
     usertoken String
+    workWeek Int
     deriving Show
 
 WorkDay json
@@ -45,22 +47,23 @@ WorkDay json
 |]
 
 data WorkDayAction = WorkDayAction
-  { actStart :: Maybe UTCTime
+  { actStart   :: Maybe UTCTime
   , actMinutes :: Maybe Int
   } deriving (Show)
 
 data NewUser = NewUser
   { newUsername :: String
   , newPassword :: String
+  , newWorkWeek :: Maybe Int
   } deriving (Show)
 
 instance FromJSON WorkDayAction where
   parseJSON (Object o) = WorkDayAction <$> o .:? "start" <*> o .:? "minutes"
-  parseJSON _ = mzero
+  parseJSON _          = mzero
 
 instance FromJSON NewUser where
-  parseJSON (Object o) = NewUser <$> o .: "username" <*> o .: "password"
-  parseJSON _ = mzero
+  parseJSON (Object o) = NewUser <$> o .: "username" <*> o .: "password" <*> o .:? "workWeek"
+  parseJSON _          = mzero
 
 instance ToJSON NewUser where
   toJSON p = object ["username" .= newUsername p, "password" .= newPassword p]
@@ -72,9 +75,10 @@ actionToMyday (WorkDayAction mStart mMinutes) (Entity uid _) = WorkDay uid start
     minutes = fromMaybe 0 mMinutes
 
 actionToUser :: NewUser -> User
-actionToUser (NewUser username password) = User username (unpack token)
+actionToUser (NewUser username password mWorkWeek) = User username (unpack token) workWeek
   where
     token = PW.makePasswordSalt (pack password) (makeSalt "thisIsTheSalt") 22
+    workWeek = fromMaybe 0 mWorkWeek
 
 runDb :: SqlPersistT (ResourceT (NoLoggingT IO)) a -> IO a
 runDb = runNoLoggingT . runResourceT . withSqliteConn "dev.sqlite3" . runSqlConn

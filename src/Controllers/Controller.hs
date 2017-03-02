@@ -2,18 +2,18 @@
 
 module Controllers.Controller where
 
-import Control.Applicative
-import Control.Monad.IO.Class (liftIO)
-import Crypto.PasswordStore as PW
-import Data.Char
-import Data.Maybe (fromMaybe)
-import Data.Monoid
-import Model as M
-import Web.Scotty
-import Database.Persist
-import Data.ByteString as BS hiding (pack, unpack)
-import Data.ByteString.Char8 as BSC8 (pack, unpack)
-import Data.Text.Lazy as LT
+import           Control.Applicative
+import           Control.Monad.IO.Class (liftIO)
+import           Crypto.PasswordStore   as PW
+import           Data.ByteString        as BS hiding (pack, unpack)
+import           Data.ByteString.Char8  as BSC8 (pack, unpack)
+import           Data.Char
+import           Data.Maybe             (fromMaybe)
+import           Data.Monoid
+import           Data.Text.Lazy         as LT
+import           Database.Persist
+import           Model                  as M
+import           Web.Scotty
 
 hello :: ActionM ()
 hello = html "<h1>Hello World! Here we need to serve the actual app.</h1>"
@@ -52,7 +52,7 @@ getDate _ = do
   maybeDate <- liftIO $ readDate dateId
   case maybeDate of
     Just date -> json date
-    Nothing -> raise $ LT.pack "Date not found"
+    Nothing   -> raise $ LT.pack "Date not found"
 
 addDate :: Entity User -> ActionM ()
 addDate user = do
@@ -81,8 +81,8 @@ fromRequest = do
   uid <- param "user_id"
   token <- header "Authorization"
   case LT.words <$> token of
-    Just ["Token", t] -> return $ User uid $ LT.unpack t
-    _ -> raise $ LT.pack "Access denied"
+    Just ["Token", t] -> return $ User uid (LT.unpack t) 0
+    _                 -> raise $ LT.pack "Access denied"
 
 authenticate :: (Entity User -> ActionM ()) -> ActionM ()
 authenticate routeFor = do

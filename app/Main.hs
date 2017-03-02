@@ -2,9 +2,9 @@
 
 module Main where
 
-import Web.Scotty
 import qualified Controllers.Controller as Controller
-import Model
+import           Model
+import           Web.Scotty
 
 main :: IO ()
 main = do
